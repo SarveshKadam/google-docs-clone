@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useEffect, useRef, useState } from "react";
 import ReactQuill from "react-quill";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
+import Quill from "quill";
 import "react-quill/dist/quill.snow.css";
 
 const modules = {
@@ -38,17 +40,54 @@ const formats = [
 ];
 
 const TextEditor = () => {
+  const quillRef = useRef<ReactQuill | null>();
+  const [socket, setSocket] = useState<Socket>();
+  const [quill, setQuill] = useState<Quill>();
+
   useEffect(() => {
-    const socket = io("https://server-domain.com");
+    const receiveHandler = (delta: any) => {
+      quill?.updateContents(delta);
+    };
+    socket?.on("receive-changes", receiveHandler);
 
     return () => {
-      socket.disconnect();
+      socket?.off("receive-changes", receiveHandler);
+    };
+  }, [quill, socket]);
+
+  useEffect(() => {
+    if (socket == null || quill == null) return;
+
+    const handler = (delta: any, _: any, source: string) => {
+      if (source !== "user") return;
+      socket.emit("send-changes", delta);
+    };
+    quill.on("text-change", handler);
+
+    return () => {
+      quill.off("text-change", handler);
+    };
+  }, [socket, quill]);
+
+  useEffect(() => {
+    const s = io("http://localhost:3002");
+    setSocket(s);
+    const q: Quill | undefined = quillRef.current?.getEditor();
+    setQuill(q);
+
+    return () => {
+      if (socket) socket.disconnect();
     };
   }, []);
 
   return (
     <div className="container">
-      <ReactQuill theme="snow" modules={modules} formats={formats} />
+      <ReactQuill
+        theme="snow"
+        modules={modules}
+        formats={formats}
+        ref={(node) => (quillRef.current = node)}
+      />
     </div>
   );
 };
