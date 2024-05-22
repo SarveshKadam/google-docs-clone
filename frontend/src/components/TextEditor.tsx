@@ -55,7 +55,7 @@ const Editor = () => {
   }, []);
 
   useEffect(() => {
-    const socketServer = io("https://google-docs-clone-phi.vercel.app", {
+    const socketServer = io("https://google-docs-clone-nq12.onrender.com", {
       transports: ["websocket", "polling"],
     });
     socketServer.on("connect_error", () => {
