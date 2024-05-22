@@ -55,7 +55,12 @@ const Editor = () => {
   }, []);
 
   useEffect(() => {
-    const socketServer = io("https://google-docs-clone-phi.vercel.app");
+    const socketServer = io("https://google-docs-ui-phi.vercel.app", {
+      transports: ["websocket", "polling"],
+    });
+    socketServer.on("connect_error", () => {
+      socketServer.io.opts.transports = ["polling", "websocket"];
+    });
     setSocket(socketServer);
 
     return () => {
@@ -72,10 +77,10 @@ const Editor = () => {
       socket?.emit("send-changes", delta);
     };
 
-    quill && quill.on("text-change", handleChange);
+    quill.on("text-change", handleChange);
 
     return () => {
-      quill && quill.off("text-change", handleChange);
+      quill.off("text-change", handleChange);
     };
   }, [quill, socket]);
 
