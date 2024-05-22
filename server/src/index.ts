@@ -20,7 +20,7 @@ const io = new Server(http, {
     origin: "https://google-docs-ui-phi.vercel.app",
     methods: ["GET", "POST"],
   },
-  transports: ["websocket"],
+  transports: ["websocket", "polling"],
 });
 
 io.on("connection", (socket) => {
