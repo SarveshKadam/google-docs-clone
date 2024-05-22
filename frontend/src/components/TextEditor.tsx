@@ -55,7 +55,7 @@ const Editor = () => {
   }, []);
 
   useEffect(() => {
-    const socketServer = io("http://localhost:3002");
+    const socketServer = io("https://google-docs-clone-phi.vercel.app");
     setSocket(socketServer);
 
     return () => {
