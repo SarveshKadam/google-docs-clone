@@ -20,6 +20,7 @@ const io = new Server(http, {
     origin: "https://google-docs-ui-phi.vercel.app",
     methods: ["GET", "POST"],
   },
+  allowEIO3: true,
 });
 
 io.on("connection", (socket) => {
