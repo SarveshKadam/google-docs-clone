@@ -57,3 +57,7 @@ body {
     display: none;
   }
 }
+
+/* .container > .ql-toolbar:first-child {
+  display: none !important;
+} */

@@ -17,7 +17,7 @@ mongoose.connect(mongodbUri);
 
 const io = new Server(http, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "http://localhost:3001",
     methods: ["GET", "POST"],
   },
 });

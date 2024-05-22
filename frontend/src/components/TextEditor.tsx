@@ -1,10 +1,9 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useRef, useState } from "react";
-import ReactQuill from "react-quill";
-import { io, Socket } from "socket.io-client";
+import { useEffect, useState } from "react";
+
 import Quill from "quill";
+import "quill/dist/quill.snow.css";
 import { useParams } from "react-router-dom";
-import "react-quill/dist/quill.snow.css";
+import { io } from "socket.io-client";
 
 const modules = {
   toolbar: [
@@ -39,23 +38,76 @@ const formats = [
   "video",
 ];
 
-const TextEditor = () => {
-  const quillRef = useRef<ReactQuill | null>();
-  const [socket, setSocket] = useState<Socket>();
+const Editor = () => {
+  const [socket, setSocket] = useState(null);
   const [quill, setQuill] = useState<Quill>();
-  const { id: documentId } = useParams();
+  const { id } = useParams();
+
   useEffect(() => {
-    if (socket == null || quill == null) return;
-    socket.once("load-document", (document) => {
-      quill.setContents(document);
-      quill.enable();
+    const quillServer = new Quill("#container", {
+      theme: "snow",
+      modules,
+      formats,
     });
-
-    socket.emit("get-document", documentId);
-  }, [quill, socket, documentId]);
+    quillServer.disable();
+    quillServer.setText("Loading the document...");
+    setQuill(quillServer);
+  }, []);
 
   useEffect(() => {
-    if (socket == null || quill == null) return;
+    const socketServer = io("http://localhost:3002");
+    setSocket(socketServer);
+
+    return () => {
+      socketServer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (socket === null || quill === null) return;
+
+    const handleChange = (delta, oldData, source) => {
+      if (source !== "user") return;
+
+      socket?.emit("send-changes", delta);
+    };
+
+    quill && quill.on("text-change", handleChange);
+
+    return () => {
+      quill && quill.off("text-change", handleChange);
+    };
+  }, [quill, socket]);
+
+  useEffect(() => {
+    if (socket === null || quill === null) return;
+
+    const handleChange = (delta) => {
+      quill.updateContents(delta);
+    };
+
+    socket && socket.on("receive-changes", handleChange);
+
+    return () => {
+      socket && socket.off("receive-changes", handleChange);
+    };
+  }, [quill, socket]);
+
+  useEffect(() => {
+    if (quill === null || socket === null) return;
+
+    socket &&
+      socket.once("load-document", (document) => {
+        quill.setContents(document);
+        quill.enable();
+      });
+
+    socket && socket.emit("get-document", id);
+  }, [quill, socket, id]);
+
+  useEffect(() => {
+    if (socket === null || quill === null) return;
+
     const interval = setInterval(() => {
       socket.emit("save-document", quill.getContents());
     }, 2000);
@@ -63,57 +115,13 @@ const TextEditor = () => {
     return () => {
       clearInterval(interval);
     };
-  }, [quill, socket]);
-
-  useEffect(() => {
-    if (socket == null || quill == null) return;
-    const receiveHandler = (delta: any) => {
-      quill?.updateContents(delta);
-    };
-    socket?.on("receive-changes", receiveHandler);
-
-    return () => {
-      socket?.off("receive-changes", receiveHandler);
-    };
-  }, [quill, socket]);
-
-  useEffect(() => {
-    if (socket == null || quill == null) return;
-
-    const handler = (delta: any, _: any, source: string) => {
-      if (source !== "user") return;
-      socket.emit("send-changes", delta);
-    };
-    quill.on("text-change", handler);
-
-    return () => {
-      quill.off("text-change", handler);
-    };
   }, [socket, quill]);
-
-  useEffect(() => {
-    const s = io("http://localhost:3002");
-    setSocket(s);
-    const q: Quill | undefined = quillRef.current?.getEditor();
-    q.disable();
-    q.setText("Loading....");
-    setQuill(q);
-
-    return () => {
-      if (socket) socket.disconnect();
-    };
-  }, []);
 
   return (
     <div className="container">
-      <ReactQuill
-        theme="snow"
-        modules={modules}
-        formats={formats}
-        ref={(node) => (quillRef.current = node)}
-      />
+      <div id="container"></div>
     </div>
   );
 };
 
-export default TextEditor;
+export default Editor;
