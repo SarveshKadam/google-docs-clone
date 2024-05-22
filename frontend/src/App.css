@@ -58,6 +58,6 @@ body {
   }
 }
 
-/* .container > .ql-toolbar:first-child {
+.container > .ql-toolbar:first-child {
   display: none !important;
-} */
+}

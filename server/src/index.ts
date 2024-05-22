@@ -17,7 +17,7 @@ mongoose.connect(mongodbUri);
 
 const io = new Server(http, {
   cors: {
-    origin: "http://localhost:3001",
+    origin: "https://google-docs-ui-phi.vercel.app",
     methods: ["GET", "POST"],
   },
 });
